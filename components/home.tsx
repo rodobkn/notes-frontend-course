@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { NoteList } from "@/components/note-list";
 import { NoteDetail } from "@/components/note-detail";
 import { Navbar } from "@/components/navbar";
+import { EmptyNoteDetail } from "@/components/empty-note-detail";
 import { Note } from "@/schema/note";
 import { Loader2 } from "lucide-react";
 
@@ -98,6 +99,9 @@ export const Home = ({
   }
 
   const handleSelectNote = (note: Note) => {
+    if (isEditingSelectedNote === true) {
+      setIsEditingSelectedNote(false);
+    }
     setSelectedNote(note);
   }
 
@@ -165,6 +169,7 @@ export const Home = ({
     <div className="h-screen">
       <Navbar
         createNewNote={handleNewNote}
+        isEditing={isEditingSelectedNote}
         isCreating={isCreatingNote}
       />
       <div className="h-[calc(100vh-80px)] w-full flex space-x-4 p-4 px-8 bg-gray-50">
@@ -188,7 +193,7 @@ export const Home = ({
             onDeleteNote={handleDeleteNote}
           />
         ) : (
-          <div>No hay nota seleccionada</div>
+          <EmptyNoteDetail onCreate={handleNewNote} />
         )}
       </div>
     </div>
