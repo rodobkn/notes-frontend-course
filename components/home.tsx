@@ -16,6 +16,8 @@ export const Home = ({
 }: HomeProps) => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [isEditingSelectedNote, setIsEditingSelectedNote] = useState(false);
+  const [isProcessingNote, setIsProcessingNote] = useState(false); // Updating or Deleting the Note
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,6 +50,7 @@ export const Home = ({
 
       setNotes((prev) => [newNote, ...prev]);
       setSelectedNote(newNote);
+      setIsEditingSelectedNote(true);
     } catch (error) {
       console.error("Error creating note: ", error);
     } finally {
@@ -55,8 +58,81 @@ export const Home = ({
     }
   }
 
+  const handleSaveNote = async (updatedNote: Note) => {
+    setIsProcessingNote(true);
+    try {
+      const response = await fetch(`${backendUrl}/notes/${updatedNote.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: updatedNote.title,
+          content: updatedNote.content,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Error updating note");
+      }
+
+      const data = await response.json();
+      const updatedNoteFromBackend: Note = transformNote(data.note);
+
+      setNotes((prev) => {
+        return prev.map((note) => {
+          if (note.id === updatedNoteFromBackend.id) {
+            return updatedNoteFromBackend;
+          }
+          return note;
+        });
+      })
+
+      setSelectedNote(updatedNoteFromBackend);
+      setIsEditingSelectedNote(false);
+    } catch (error) {
+      console.error("Error updating note: ", error);
+    } finally {
+      setIsProcessingNote(false);
+    }
+  }
+
   const handleSelectNote = (note: Note) => {
     setSelectedNote(note);
+  }
+
+  const handleDeleteNote = async () => {
+    if (!window.confirm("Are you sure you want to delete this note?")) {
+      return;
+    }
+
+    setIsProcessingNote(true);
+    try {
+      if (!selectedNote) {
+        throw new Error("Error deleting note because selectedNote is null");
+      }
+
+      const response = await fetch(`${backendUrl}/notes/${selectedNote.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Error deleting note");
+      }
+
+      setNotes((prev) => {
+        const updatedNotes = prev.filter((note) => note.id !== selectedNote.id);
+        setSelectedNote(updatedNotes.length > 0 ? updatedNotes[0] : null);
+        return updatedNotes;
+      });
+      if (isEditingSelectedNote === true) {
+        setIsEditingSelectedNote(false);
+      };
+    } catch (error) {
+      console.error("Error deleting note: ", error);
+    } finally {
+      setIsProcessingNote(false);
+    }
   }
 
   useEffect(() => {
@@ -105,6 +181,11 @@ export const Home = ({
         ) : selectedNote ? (
           <NoteDetail
             note={selectedNote}
+            onSaveNote={handleSaveNote}
+            isProcessing={isProcessingNote}
+            isEditing={isEditingSelectedNote}
+            setIsEditing={setIsEditingSelectedNote}
+            onDeleteNote={handleDeleteNote}
           />
         ) : (
           <div>No hay nota seleccionada</div>
