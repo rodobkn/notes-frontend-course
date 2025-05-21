@@ -22,6 +22,7 @@ export const Home = ({
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformNote = (note: any): Note => ({
     ...note,
     created_at: new Date(note.created_at),
