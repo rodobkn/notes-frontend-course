@@ -18,6 +18,7 @@ steps:
         '--no-cache',
         '-t',
         'us-central1-docker.pkg.dev/notes-app-456603/notes-frontend-artifact-repo/notes-frontend:$COMMIT_SHA',
+        '.',
       ]
 
   # Paso 3: Push de la imagen a Artifact Registry
