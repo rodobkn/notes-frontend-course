@@ -7,14 +7,14 @@ import { Navbar } from "@/components/navbar";
 import { EmptyNoteDetail } from "@/components/empty-note-detail";
 import { Note } from "@/schema/note";
 import { Loader2 } from "lucide-react";
+import {
+  createNote,
+  deleteNote,
+  getAllNotes,
+  updateNote
+} from "@/actions/notes";
 
-interface HomeProps {
-  backendUrl: string;
-}
-
-export const Home = ({
-  backendUrl,
-}: HomeProps) => {
+export const Home = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditingSelectedNote, setIsEditingSelectedNote] = useState(false);
@@ -22,34 +22,10 @@ export const Home = ({
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const transformNote = (note: any): Note => ({
-    ...note,
-    created_at: new Date(note.created_at),
-    updated_at: new Date(note.updated_at),
-  })
-
   const handleNewNote = async () => {
     setIsCreatingNote(true);
     try {
-      const response = await fetch(`${backendUrl}/notes`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: "Untitle Note",
-          content: "",
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error("Error creating note")
-      }
-
-      const data = await response.json();
-      const newNote: Note = transformNote(data.note);
-
+      const newNote = await createNote();
       setNotes((prev) => [newNote, ...prev]);
       setSelectedNote(newNote);
       setIsEditingSelectedNote(true);
@@ -63,23 +39,7 @@ export const Home = ({
   const handleSaveNote = async (updatedNote: Note) => {
     setIsProcessingNote(true);
     try {
-      const response = await fetch(`${backendUrl}/notes/${updatedNote.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: updatedNote.title,
-          content: updatedNote.content,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Error updating note");
-      }
-
-      const data = await response.json();
-      const updatedNoteFromBackend: Note = transformNote(data.note);
+      const updatedNoteFromBackend = await updateNote(updatedNote)
 
       setNotes((prev) => {
         return prev.map((note) => {
@@ -117,13 +77,7 @@ export const Home = ({
         throw new Error("Error deleting note because selectedNote is null");
       }
 
-      const response = await fetch(`${backendUrl}/notes/${selectedNote.id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Error deleting note");
-      }
+      await deleteNote(selectedNote.id);
 
       setNotes((prev) => {
         const updatedNotes = prev.filter((note) => note.id !== selectedNote.id);
@@ -143,13 +97,7 @@ export const Home = ({
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await fetch(`${backendUrl}/notes`);
-        if (!response.ok) {
-          throw new Error("Failes to fetch notes")
-        }
-
-        const data = await response.json();
-        const allNotes: Note[] = data.notes.map(transformNote)
+        const allNotes = await getAllNotes();
 
         setNotes(allNotes);
         if (allNotes.length > 0 && !selectedNote) {
