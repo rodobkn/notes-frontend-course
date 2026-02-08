@@ -1,4 +1,4 @@
-FROM node:20.18.1-alpine AS base
+FROM node:24.13.0-alpine AS base
 
 # Etapa de instalar las dependencias
 FROM base AS deps
